@@ -6,6 +6,7 @@ SECTIONS
 
     .boot :
     {
+        . = ALIGN(8);
         KEEP(*(.multiboot_header))
     }
     

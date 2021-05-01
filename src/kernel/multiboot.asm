@@ -1,5 +1,5 @@
-section .multiboot_header
-
+SECTION .multiboot_header
+ALIGN 8
 header_start:
     dd 0xe85250d6   ;  multiboot2 magic header
     dd 0            ;  protected mode i386
