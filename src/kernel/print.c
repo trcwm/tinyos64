@@ -26,6 +26,12 @@ static void toHex(uint32_t val)
     }
 }
 
+static void toHex64(uint64_t val)
+{
+    toHex(val >> 32);
+    toHex(val & 0xFFFFFFFF);
+}
+
 /** convert a 32-bit number to a 10-digit ASCII number */
 static size_t toUDec(uint32_t val)
 {
@@ -99,6 +105,13 @@ static void format(const char *fmt, va_list va)
             {
             case 'X':
                 toHex(va_arg(va, uint32_t));
+                break;
+            case 'l':
+                if (*fmt == 'X')
+                {
+                    toHex64(va_arg(va, uint64_t));
+                    fmt++;
+                }
                 break;
             case 'u':
                 tmp = toUDec(va_arg(va, uint32_t));

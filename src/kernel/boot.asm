@@ -1,6 +1,11 @@
 ; i386 boot code
 
 global boot32
+global stack_top
+global stack_bottom
+global _isr_table
+global _idtr
+
 extern long_mode_start
 
 section .text
@@ -10,7 +15,7 @@ boot32:
 
     call check_multiboot
     call check_cpuid
-    call check_long_mode
+    call check_long_mode    
 
     call setup_page_tables
     call enable_paging
@@ -118,7 +123,7 @@ page_table_l2:
     resb 4096
 
 stack_bottom:
-    resb 16384
+    resq 16384
 stack_top:
 
 section .rodata
@@ -129,3 +134,11 @@ gdt64:
 .pointer:
     dw $ - gdt64 - 1
     dq gdt64
+
+section .data
+_isr_table:
+    resb 50*16      ; reserve 50 entries in interrupt table    
+    ; IDT descriptor:
+_idtr:
+    dw   50*16-1    ; total bytes in isr_table
+    dd   _isr_table ; pointer to the table
