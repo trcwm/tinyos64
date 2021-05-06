@@ -41,12 +41,6 @@
 #define LED_NUM_LOCK 0x02
 #define LED_CAPS_LOCK 0x04
 
-static uint8_t scancodes[256] =
-{
-    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,    // 0x00 - 0x0F
-    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,    // 0x00 - 0x0F
-};
-
 static bool kb_wait()
 {
     while(true)
@@ -58,6 +52,15 @@ static bool kb_wait()
         }
     }
 }
+
+typedef struct 
+{
+    bool shift;
+} kbstate_t;
+
+static kbstate_t g_kbstate = {
+    .shift = false
+};
 
 uint8_t keyboard_scan()
 {
@@ -166,6 +169,97 @@ static const uint8_t scan2ascii[128] =
     0,      // 83, Del
 };
 
+#define KB_LSHIFT 42
+#define KB_RSHIFT 54
+
+static const uint8_t scan2ascii_shifted[128] =
+{
+    0,      // 0 - no key
+    0,      // 1 - ESCAPE
+    '!',    // 2 - numeric 1
+    '@',    // 3 - numeric 2
+    '#',    // 4 - numeric 3
+    '$',    // 5 - numeric 4
+    '%',    // 6 - numeric 5
+    '^',    // 7 - numeric 6
+    '&',    // 8 - numeric 7
+    '*',    // 9 - numeric 8
+    '(',    // 10 - numeric 9
+    ')',    // 11 - numeric 0
+    '_',    // 12
+    '+',    // 13
+    0,      // backspace
+    '\t',   // tab
+    'Q',    // 16
+    'W',    // 17
+    'E',    // 18
+    'R',    // 19
+    'T',    // 20
+    'Y',    // 21
+    'U',    // 22
+    'I',    // 23
+    'O',    // 24
+    'P',    // 25
+    '{',    // 26
+    '}',    // 27
+    '\n',   // 28 ENTER
+    0,      // 29 CONTROL
+    'A',    // 30 
+    'S',    // 31 
+    'D',    // 32 
+    'F',    // 33 
+    'G',    // 34 
+    'H',    // 35 
+    'J',    // 36 
+    'K',    // 37 
+    'L',    // 38 
+    ':',    // 39 
+    '"',   // 40 
+    '`',    // 41 
+    0,      // 42, Left Shift 
+    '|',   // 43
+    'Z',    // 44
+    'X',    // 45
+    'C',    // 46
+    'V',    // 47
+    'B',    // 48
+    'N',    // 49
+    'M',    // 50
+    '<',    // 51
+    '>',    // 52
+    '?',    // 53
+    0,      // 54, Right Shift
+    0,      // 55, PrtSc
+    0,      // 56, Alt
+    ' ',    // 57, Space
+    0,      // 58, Caps Lock
+    0,      // 59, F1
+    0,      // 60, F1
+    0,      // 61, F1
+    0,      // 62, F1
+    0,      // 63, F1
+    0,      // 64, F1
+    0,      // 65, F1
+    0,      // 66, F1
+    0,      // 67, F1
+    0,      // 68, F1
+    0,      // 69, F1
+    0,      // 70, F1
+    0,      // 71, F1
+    0,      // 72, F1
+    0,      // 73, F1
+    '-',    // 74, keypad
+    0,      // 75, Left
+    0,      // 76, Center
+    0,      // 77, Right
+    '+',    // 78,
+    0,      // 79, End
+    0,      // 80, Down
+    0,      // 81, PgDn
+    0,      // 82, Ins
+    0,      // 83, Del
+};
+
 char keyboard_read()
 {
     char c = 0;
@@ -175,7 +269,29 @@ char keyboard_read()
         if ((code & 0x80) == 0)
         {
             // ignore release
-            c = scan2ascii[code];
+            if (g_kbstate.shift)
+            {
+                c = scan2ascii_shifted[code];
+            }
+            else
+            {
+                c = scan2ascii[code];
+            }            
+
+            // check shift key press
+            if ((code == KB_LSHIFT) || (code == KB_RSHIFT))
+            {
+                g_kbstate.shift = true;
+            }
+        }
+        else
+        {
+            // check shift key release
+            code &= 0x7F;
+            if ((code == KB_LSHIFT) || (code == KB_RSHIFT))
+            {
+                g_kbstate.shift = false;
+            }            
         }
     }
     return c;
