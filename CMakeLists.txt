@@ -5,6 +5,8 @@ project(tinyos64)
 add_subdirectory(src)
 
 add_custom_target(dist DEPENDS kernel
-    BYPRODUCTS ${CMAKE_SOURCE_DIR}/dist/tinyos64.iso ${CMAKE_SOURCE_DIR}/iso/boot/kernel.bin
+    BYPRODUCTS ${CMAKE_SOURCE_DIR}/dist/tinyos64.iso ${CMAKE_SOURCE_DIR}/dist/tinyos64_efi.iso ${CMAKE_SOURCE_DIR}/iso/boot/kernel.bin 
     COMMAND cp ${CMAKE_SOURCE_DIR}/dist/kernel.bin ${CMAKE_SOURCE_DIR}/iso/boot/kernel.bin
-    COMMAND grub-mkrescue /usr/lib/grub/i386-pc -o ${CMAKE_SOURCE_DIR}/dist/tinyos64.iso ${CMAKE_SOURCE_DIR}/iso)
+    COMMAND grub-mkrescue /usr/lib/grub/i386-pc -o ${CMAKE_SOURCE_DIR}/dist/tinyos64.iso ${CMAKE_SOURCE_DIR}/iso
+    COMMAND grub-mkrescue /usr/lib/grub/x86_64-efi -o ${CMAKE_SOURCE_DIR}/dist/tinyos64_efi.iso ${CMAKE_SOURCE_DIR}/iso)
+    

@@ -76,7 +76,7 @@ void console_scroll()
 {
     ConsoleChar *dst = (ConsoleChar *)(0xB8000);
     ConsoleChar *src = dst + consoleState.w;
-    
+
     for(uint32_t y=0; y<(consoleState.h-1); y++)
     {
         for(uint32_t x=0; x<consoleState.w; x++)
@@ -92,6 +92,7 @@ void console_scroll()
         dst->colour    = 2;
         dst++;
     }
+
 }
 
 void console_adjust()

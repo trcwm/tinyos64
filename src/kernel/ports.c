@@ -59,6 +59,16 @@ uint64_t cpuid(uint64_t index)
     return val;    
 }
 
+void enableInterrupts()
+{    
+    asm volatile("sti");
+}
+
+void disableInterrupts()
+{
+    asm volatile("cli");   
+}
+
 uint64_t read_msr(const uint32_t msr)
 {
     uint64_t result;

@@ -19,6 +19,8 @@ long_mode_start:
     call setup_fpu
 
     lidt [_idtr]
+    sti
+
     call kernel_start
     hlt
 

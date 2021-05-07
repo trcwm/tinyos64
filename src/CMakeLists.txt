@@ -14,6 +14,7 @@ add_executable(kernel
     kernel/print.c
     kernel/fpu.c
     kernel/main.c
+    kernel/smbios.c
     kernel/mandelbrot.c
     )
 

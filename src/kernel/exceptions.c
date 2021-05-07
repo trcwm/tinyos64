@@ -124,6 +124,8 @@ __attribute__((naked)) void handler8()
         *screen++ = 7;
     }
 
+    asm("retq");
+
     while(1) {};
 }
 

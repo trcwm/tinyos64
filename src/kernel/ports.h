@@ -20,4 +20,6 @@ uint64_t read_msr(const uint32_t msr);
 void write_msr(const uint32_t msr, const uint64_t value);
 
 void setISR(uint8_t intnum, uint64_t address);
+void enableInterrupts();
+void disableInterrupts();
 void int10();

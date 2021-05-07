@@ -5,6 +5,7 @@
 #include "print.h"
 #include "fpu.h"
 #include "ports.h"
+#include "smbios.h"
 #include "mandelbrot.h"
 
 extern uint64_t _idtr;
@@ -33,6 +34,26 @@ void dump_isrtable()
         print("ISR %d:  %lX  %lX  addr=%lX\n\r", i, tbl[0], tbl[1], addr);
         tbl+=2;
     }
+}
+
+bool strncmp(const char *s1, const char *s2, size_t n)
+{
+    for(size_t i=0; i<n; i++)
+    {
+        if (*s1 != *s2)
+            return false;
+
+        if ((*s1 == *s2) && (*s1 == 0))
+        {
+            // early string termination
+            return true;
+        }
+
+        ++s1;
+        ++s2;
+    }
+
+    return true;
 }
 
 void kernel_start()
@@ -85,6 +106,8 @@ void kernel_start()
         setISR(i, (uint64_t)defaulthandler);
     }
 
+    //enableInterrupts();
+
     print("\n\r");
 
     // check for SSE instruction support
@@ -105,8 +128,120 @@ void kernel_start()
     {
         print("No SSE2\n\r");
     }
-    //dump_isrtable();
 
+#if 0
+    // detect smbios
+    void* smbios = detect_smbios();
+
+    if (smbios != 0)
+    {
+        print("SMBios at 0x%lX\n\r", smbios);
+        SMBios32Header_t* smbios32 = (SMBios32Header_t*)smbios;
+        SMBios64Header_t* smbios64 = (SMBios64Header_t*)smbios;
+
+        uint8_t* ptr = 0;   // pointer to SMBios structures
+
+        if (strncmp(smbios32->magic, "_SM_", 4))
+        {
+            // 32 bit version
+            print("  32 bit version\n\r");
+            ptr = (uint8_t*)(uint64_t)smbios32->struct_tbl_address;
+            print("  number of structs: %d\n\r", smbios32->num_structs);
+        }
+        else if (strncmp(smbios64->magic, "_SM3_", 5))
+        {
+            // 64 bit version
+            print("  64 bit version\n\r");
+            ptr = (uint8_t*)smbios64->struct_tbl_address;
+        } 
+
+        //FIXME: this only works for 32 bit SMBIOS!!
+        size_t count = smbios32->num_structs;
+        size_t scount = 0;
+        while (count != 0)
+        {
+            SMStructHeader_t* smbs = (SMStructHeader_t*)ptr;
+            uint8_t stype = smbs->stype;            
+            //print("  struct %d\n\r", scount++);
+            print("  type   = %d\n\r", smbs->stype);
+            //print("  len    = %d bytes\n\r", smbs->len);
+            //print("  handle = 0x%X\n\r", smbs->handle);
+
+            // skip formatted area
+            ptr += smbs->len;
+
+            if (stype == 0 /* bios info */)
+            {
+                SMBiosInfoFormatted_t *info = (SMBiosInfoFormatted_t *)ptr;
+
+                // print the characteristics
+                // see: https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.4.0.pdf
+                // page 35
+                // 
+
+                if (info->biosCharacteristics & (1<<30))
+                {
+                    print("    int 10h CGA/Mono video services supported\n\r");
+                }
+                if (info->biosCharacteristics & (1<<28))
+                {
+                    print("    int 4h serial services supported\n\r");
+                }                
+                if (info->biosCharacteristics & (1<<27))
+                {
+                    print("    int 9h 8042 keyboard services supported\n\r");
+                }
+                if (info->biosCharacteristics & (1<<26))
+                {
+                    print("    int 5h screen printing services supported\n\r");
+                }
+                if (info->biosCharacteristicsExt[0] & 1)
+                {
+                    print("    ACPI supported\n\r");
+                }
+                if (info->biosCharacteristicsExt[0] & (1<<1))
+                {
+                    print("    legacy USB supported\n\r");
+                }
+                if (info->biosCharacteristicsExt[1] & (1<<3))
+                {
+                    print("    UEFI supported\n\r");
+                }
+                if (info->biosCharacteristicsExt[1] & (1<<4))
+                {
+                    print("    SMBios = virtual machine\n\r");
+                }
+            }
+
+            // show strings
+            while(true)
+            {
+                //print("\t");
+                while(*ptr != 0)
+                {
+                    ptr++;
+                //    print("%c", *ptr++);
+                }
+                //print("\n\r");
+                
+                ptr++;
+                if (*ptr == 0)
+                {
+                    ptr++;
+                    break;                        
+                }
+            }
+            count--;
+        }
+    }
+    else
+    {
+        print("SMBios not found!\n\r");
+    }
+#endif 
+
+    //dump_isrtable();
+#if 0
     const char gfx[] = " .,'~!^:;[/<&?oxOX#  ";
     for(int32_t y=-12; y<12; y++)
     {
@@ -120,10 +255,9 @@ void kernel_start()
         }
         print("\n\r");
     }
-
+#endif
     print("\n\r");
     print(">");
-    while(1) 
     {
         uint8_t kb = keyboard_read();
         if (kb == '\n')

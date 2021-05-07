@@ -14,9 +14,8 @@ SECTIONS
     {
         code_start = .;
         *(.text)
+        code_end = .;        
         *(.rodata*)
-        . = ALIGN(4K);
-        code_end = .;
     }
 
     .data :

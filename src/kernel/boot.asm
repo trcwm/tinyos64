@@ -11,11 +11,12 @@ extern long_mode_start
 section .text
 bits 32
 boot32:
-    mov esp, stack_top
+    cli
+    mov esp, stack_top    
 
     call check_multiboot
     call check_cpuid
-    call check_long_mode    
+    call check_long_mode
 
     call setup_page_tables
     call enable_paging
@@ -86,12 +87,35 @@ setup_page_tables:
     jne .fill_loop
     ret
 
-enable_paging:
+enable_paging:    
     mov eax, page_table_l4
     mov cr3, eax
 
+    ; disable write protect bit in CR0
+    mov eax, cr0
+    and eax, 0xFFFFFFFF - (1<<16) ; enable writing to read-only pages in ring 0
+    mov cr0,eax 
+
+%if 0
+    xor edi, edi
+    lea esi, [txt1]
+    call print_string
+
+    mov eax, cr0
+    call print_eax
+
+    add edi,4
+    lea esi, [txt2]
+    call print_string
+
+    mov eax, cr4
+    call print_eax
+    hlt
+%endif
+
     ; enable PAE
-    mov ecx, cr4
+    ; enabling this makes my real system crash.. ??
+    mov eax, cr4
     or  eax, 1 << 5
     mov cr4, eax
 
@@ -112,6 +136,33 @@ error:
     mov byte [0xB8000],al
     hlt
 
+
+; print eax to the screen 
+; where edi is the offset into screen memory
+print_eax:
+    mov ecx, 32/4   ; number of nibbles
+.ploop:
+    rol eax,4       ; printable nibble in lsb
+    mov edx,eax
+    and edx, 0x0F    ; mask nibble
+    movzx edx, byte [nibble2ascii + edx]
+    mov byte [0xB8000 + edi*2],dl
+    inc edi
+    dec ecx
+    jnz .ploop
+    ret
+
+print_string:
+    mov al, byte [esi]
+    cmp al,0
+    je .pexit
+    mov byte[0xB8000 + edi*2],al
+    inc esi
+    inc edi
+    jmp print_string
+.pexit:
+    ret
+
 section .bss
 
 align 4096
@@ -121,6 +172,8 @@ page_table_l3:
     resb 4096
 page_table_l2:
     resb 4096
+_isr_table:
+    resb 50*16      ; reserve 50 entries in interrupt table
 
 stack_bottom:
     resq 16384
@@ -135,9 +188,11 @@ gdt64:
     dw $ - gdt64 - 1
     dq gdt64
 
+nibble2ascii: db "0123456789ABCDEF"
+txt1: db "CR0: 0x",0
+txt2: db "CR4: 0x",0
+
 section .data
-_isr_table:
-    resb 50*16      ; reserve 50 entries in interrupt table    
     ; IDT descriptor:
 _idtr:
     dw   50*16-1    ; total bytes in isr_table
